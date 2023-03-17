@@ -14,7 +14,7 @@ class Car:
     # This will be linear to begin with. Then replace with typical battery curve for a Tesla or something like that. If I can build out a better
     # model, this will be done instead. Currently linear implementation. This will also be replaced
     def charge(self, charge_amount):
-        self.soc += charge_amount
+        self.soc += charge_amount * 0.9 # Assume 90% efficiency of charge rate. Varied amounts due to temperature and currents. Safe to just go with an average of the efficiencies that I saw
     
     def set_max_battery_size(self, max_battery_size):
         self.max_battery_size = max_battery_size
@@ -28,7 +28,11 @@ class Car:
 
     # Taking the battery curves, predict when the battery will finish charging. This will be replaced by a prediction algorithm as well.
     def predict_charging_time_completion(self, charging_rate):
-        pass
+        approx_time = self.max_battery_size / (charging_rate * 0.9)
+        return approx_time
+
+
+
 
 
         
@@ -171,4 +175,6 @@ if __name__ == "__main__":
         
     print(f"Exceeded peak {exceeded_peak} times out of {epochs} times with average charging rate of {np.average(charge_rates)}")
     print(f"i.e. exceeded peak {(exceeded_peak / epochs) * 100}% of the time")
+    selected_charge_rate = np.average(charge_rates)
+    print(f"{round(myCar.predict_charging_time_completion(selected_charge_rate), 2)} hours until full charge")
 
