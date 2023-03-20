@@ -2,6 +2,7 @@ import numpy as np
 from tqdm import tqdm
 import requests
 import datetime
+import pandas as pd
 
 class Car:
     def __init__(self, car_name, max_battery_size, max_charge_rate=100_000):
@@ -106,6 +107,14 @@ def determine_optimal_charging_rate(myCar, predicted_energy_usage, peak):
 
 def generate_car(correct_car=""):
     # This will load in the configs that I wrote for the electric car dataset and return both the max battery size and the car associated with it
+
+    df = pd.read_csv("car_battery.csv")
+    data = df.to_numpy()
+    random_index = np.random.randint(len(data))
+    random_car = data[random_index]
+
+    
+
 
     cars = np.array(["Tesla Model S", "Tesla Model 3", "Tesla Model X", "Tesla Model Y"])
     
