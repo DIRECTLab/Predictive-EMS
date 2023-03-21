@@ -3,6 +3,10 @@ from tqdm import tqdm
 import requests
 import datetime
 import pandas as pd
+import matplotlib.pyplot as plt
+from energy_predictor import LSTM
+import torch
+from sklearn.preprocessing import MinMaxScaler
 
 class Car:
     def __init__(self, car_name, max_battery_size, max_charge_rate=100_000):
@@ -31,12 +35,7 @@ class Car:
     def predict_charging_time_completion(self, charging_rate):
         approx_time = self.max_battery_size / (charging_rate * 0.9)
         return approx_time
-
-
-
-
-
-        
+  
 
 
 # This will be the thing that generates the "true" energy usage. Will eventually be based on historical data instead. (Get the past 4 days at the leviton)
@@ -70,11 +69,61 @@ def generate_energy_usage():
 
     return ten_minute_averages
 
+def sliding_windows(data, lstm):
+    x = []
+    y = []
+
+    for i in range(len(data) - lstm.seq_length - 1):
+        _x = data[i:(i+lstm.seq_length)]
+        _y = data[i+lstm.seq_length]
+        x.append(_x)
+        y.append(_y)
+    
+    return np.array(x), np.array(y)
+
 # This will eventually be replaced by a LSTM prediction engine instead
 def predict_energy_usage(current_usage):
     usage = np.random.normal(current_usage, 15000, size=1000)
 
     return usage
+
+# This function will be used to generate out timesteps number of predictions. It will take in the data, apply the sliding window, then predict 
+def predict_new(data, timesteps, lstm):
+    # Prepare the data for the first prediction
+    predictions = []
+
+    x = data[0:lstm.seq_length]
+    x = torch.tensor(np.array(x)).to('cuda')
+    # y = data[self.seq_length]
+    lstm.eval()
+    for i in range(timesteps):
+        prediction = lstm(x)
+        predictions.append(prediction)
+        x.append(prediction)
+        x.pop(0)
+    
+    plt.plot(predictions)
+    
+def predict(data, lstm):
+    # prepare data. This will be acting over the past 4 days
+    x, y = sliding_windows(data, lstm)
+
+    predictions = []
+
+    dataX = torch.Tensor(x).to('cuda')
+    # dataY = torch.Tensor(y).to('cuda')
+
+    prediction = lstm(dataX)
+    predictions.append(sc.inverse_transform(prediction.cpu().data.numpy()))
+    predictions = [i[0] for i in predictions[0]]
+    plt.plot(predictions, label="Predictions")
+    plt.plot(sc.inverse_transform(y), label="Actual Data")
+    plt.legend()
+    plt.show()
+
+    return predictions
+
+
 
 
 # This will return an optimal charging rate. Will eventually be replaced by a RL algorithm instead. Right now, it will just try incrementing the power output by 1000 watts each time and if it can finish before it predicts it will exceed the peak, return that value (well, keep going until it does exceed the peak)
@@ -111,18 +160,21 @@ def generate_car(correct_car=""):
     df = pd.read_csv("car_battery.csv")
     data = df.to_numpy()
     random_index = np.random.randint(len(data))
-    random_car = data[random_index]
+    car = data[random_index]
 
+    while car[1] == correct_car:
+        random_index = np.random.randint(len(data))
+        car = data[random_index]
     
-
-
-    cars = np.array(["Tesla Model S", "Tesla Model 3", "Tesla Model X", "Tesla Model Y"])
+    max_battery_size = car[3] * 1000 # Multiplied by 1000 to put into watts
     
-    cars = np.delete(cars, np.where(cars == correct_car))
-    car = np.random.choice(cars)
-    max_battery_size = 100_000 # watts
+    
+    # cars = np.array(["Tesla Model S", "Tesla Model 3", "Tesla Model X", "Tesla Model Y"])
+    # cars = np.delete(cars, np.where(cars == correct_car))
+    # car = np.random.choice(cars)
+    # max_battery_size = 100_000 # watts
 
-    return car, max_battery_size
+    return car[1], max_battery_size
 
 def generate_soc():
     distribution = np.random.beta(6, 10)
@@ -141,8 +193,13 @@ if __name__ == "__main__":
     charge_rates = []
     exceeded_peak = 0
     true_energy_usage = generate_energy_usage()
+    power_usage = [np.array([i[1]]) for i in true_energy_usage]
+    sc = MinMaxScaler()
+    power_usage = sc.fit_transform(power_usage)
+    lstm = LSTM(1, 1, 1, 1, 24)
+    lstm.load_state_dict(torch.load('models/energy_usage_predictor.pth'))
+    lstm.to('cuda')
     
-
     # This simulation will "spawn" a car, and it is our job to charge it. We will have a basic probability distribution that will generate a power consumption for the next hour or so
     # Based upon this generation, and the chance of us knowing what soc they are at and what car they have (i.e. battery size), we will then set a curtailment to charge them as quick as possible but without
     # exceeding the peak. Exceeding the peak is very bad. This first simulation will not be able to curtail in session, which will make it more interesting. The balance between fast charging and 
@@ -168,7 +225,8 @@ if __name__ == "__main__":
 
         myCar.set_initial_charge_percentage(soc)
 
-        predicted_energy_usage = predict_energy_usage(true_energy_usage[0][1])
+        predicted_energy_usage = predict(power_usage, lstm)
+        # predicted_energy_usage = predict_energy_usage(true_energy_usage[0][1])
 
         
         charge_rate = determine_optimal_charging_rate(myCar, predicted_energy_usage, peak_consumption) # Since it is every 10 minutes, and it is 10_000 watts per hour, you need to do 1/6 of the amount
