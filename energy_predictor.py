@@ -28,14 +28,16 @@ class LSTM(nn.Module):
     def forward(self, x):
         h_0 = Variable(torch.zeros(self.num_layers, x.size(0), self.hidden_size * 3)).to("cuda")
         c_0 = Variable(torch.zeros(self.num_layers, x.size(0), self.hidden_size * 3)).to("cuda")
-
         ula, (h_out, _) = self.lstm(x, (h_0, c_0))
         h_out = h_out.view(-1, self.hidden_size * 3)
         out = self.fc(h_out)
         out = self.fc1(out)
         out = self.fc2(out)
+        # out = self.fc3(out)
+        # out = self.fc4(out)
 
         return out
+
 
     # def sliding_windows(self, data):
     #     x = []
