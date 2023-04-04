@@ -256,7 +256,8 @@ def run():
         action = agent.select_action(state)
 
         actions.append(action.cpu().detach().numpy()[0][0])
-        # TODO: Observation will be the true states during charge, reward will be the accumulated reward. Used to return done, but done is always true here
+        
+        # Observation will be the true states during charge, reward will be the accumulated reward. Used to return done, but done is always true here
         observation, reward = charge(action, myCar, peak, data, seq_length, random_start_location)
 
         rewards.append(reward)
@@ -269,7 +270,6 @@ def run():
         
         agent.memory.push(state, action, next_state, reward)
         
-        # TODO: This will be grabbing a new scenario, not actually changing state to next_state
         # state = next_state
         agent.optimize_model()
 
