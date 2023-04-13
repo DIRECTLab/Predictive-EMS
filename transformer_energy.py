@@ -341,22 +341,22 @@ if __name__ == "__main__":
     fit(model, optimizer, criterion, train_dataloader, val_dataloader, epochs)
 
 
-    # examples = [
-    #     # torch.tensor([[-1, 0, 0, 0, 0, 0, 0, 0, 0, -2]], dtype=torch.long, device=device),
-    #     torch.tensor([[2, 1, 1, 1, 1, 1, 1, 1, 1, 3]], dtype=torch.long, device=device),
-    #     torch.tensor([[2, 4, 4, 4, 4, 4, 3]], dtype=torch.long, device=device),
-    #     torch.tensor([[2, 1, 0, 1, 0, 1, 0, 1, 0, 3]], dtype=torch.long, device=device),
-    #     torch.tensor([[2, 0, 1, 0, 1, 0, 1, 0, 1, 3]], dtype=torch.long, device=device),
-    #     torch.tensor([[2, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 3]], dtype=torch.long, device=device),
-    #     torch.tensor([[2, 0, 1, 3]], dtype=torch.long, device=device)
-    # ]
+    examples = [
+        # torch.tensor([[-1, 0, 0, 0, 0, 0, 0, 0, 0, -2]], dtype=torch.long, device=device),
+        torch.tensor([[2, 1, 1, 1, 1, 1, 1, 1, 1, 3]], dtype=torch.long, device=device),
+        torch.tensor([[2, 4, 4, 4, 4, 4, 3]], dtype=torch.long, device=device),
+        torch.tensor([[2, 1, 0, 1, 0, 1, 0, 1, 0, 3]], dtype=torch.long, device=device),
+        torch.tensor([[2, 0, 1, 0, 1, 0, 1, 0, 1, 3]], dtype=torch.long, device=device),
+        torch.tensor([[2, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 3]], dtype=torch.long, device=device),
+        torch.tensor([[2, 0, 1, 3]], dtype=torch.long, device=device)
+    ]
 
-    # for idx, example in enumerate(examples):
-    #     result = predict(model, example)
-    #     print(f"Example {idx}")
-    #     print(f"Input: {example.view(-1).tolist()[1:-1]}")
-    #     print(f"Continuation: {result[1:-1]}")
-    #     print()
+    for idx, example in enumerate(examples):
+        result = predict(model, example)
+        print(f"Example {idx}")
+        print(f"Input: {example.view(-1).tolist()[1:-1]}")
+        print(f"Continuation: {result[1:-1]}")
+        print()
 
 
 

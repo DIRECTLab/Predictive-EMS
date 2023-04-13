@@ -9,7 +9,7 @@ import torch
 from sklearn.preprocessing import MinMaxScaler
 from price_agent import *
 from car import Car
-
+from Transformer import *
 
 
 # This will be the thing that generates the "true" energy usage. Will eventually be based on historical data instead. (Get the past 4 days at the leviton)
@@ -38,8 +38,7 @@ def generate_energy_usage():
         values = usage['data'][i:i+120]
         power = [value['power'] for value in values]
 
-        ten_minute_averages.append((values[0]['timestamp'], np.average(power) * 1000))
-
+        ten_minute_averages.append((values[0]['timestamp'], int(np.clip(math.ceil((np.average(power) * 1000) / 1000) + 100, 0, 300_000 / 1000 + 3))))
 
     return ten_minute_averages
 
@@ -158,8 +157,8 @@ def generate_soc():
 
 
 if __name__ == "__main__":
-    peak_consumption = 70000 # Watts
-    epochs = 100_000
+    peak_consumption = 30000 # Watts
+    epochs = 100
 
     # Set up the probabilities of knowing the car that will be charging and predicting the soc
     probability_of_knowing_car = 0.80
@@ -167,18 +166,34 @@ if __name__ == "__main__":
     charge_rates = []
     exceeded_peak = 0
     true_energy_usage = generate_energy_usage()
-    power_usage = [np.array([i[1]]) for i in true_energy_usage]
-    sc = MinMaxScaler()
-    power_usage = sc.fit_transform(power_usage)
+    power_usage = np.array([i[1] for i in true_energy_usage])
 
-    seq_length = 64
-    lstm = LSTM(3, 3, 16, 1, seq_length)
-    lstm.load_state_dict(torch.load('models/energy_usage_predictor.pth'))
-    lstm.to('cuda')
+    
+    # sc = MinMaxScaler()
+    # power_usage = sc.fit_transform(power_usage)
+
+    seq_length = 40
+    lr = 0.001
+    num_head = 16
+    num_encoder_layer = 8
+    num_decoder_layer = 8
+    length_of_prediction = 18
+    num_tokens = int(300_000 / 1000 + 3)
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    energy_model = Transformer(num_tokens=num_tokens, dim_model=256, num_heads=num_head, num_encoder_layers=num_encoder_layer, num_decoder_layers=num_decoder_layer, dropout=0.2).to(device)
+    energy_model.load_state_dict(torch.load('models/transformer_energy_predictor.pth'))
+    energy_model.to(device)
+
+    # seq_length = 64
+    # lstm = LSTM(3, 3, 16, 1, seq_length)
+    # lstm.load_state_dict(torch.load('models/energy_usage_predictor.pth'))
+    # lstm.to('cuda')
 
     actor = Actor(seq_length, 1)
     critic = Critic(seq_length, 1)
     
+    predicted_energy_usage = transformer_predict(energy_model, torch.tensor(np.array([power_usage[:seq_length]]), dtype=torch.long, device=device), device=device)
     
     # This simulation will "spawn" a car, and it is our job to charge it. We will have a basic probability distribution that will generate a power consumption for the next hour or so
     # Based upon this generation, and the chance of us knowing what soc they are at and what car they have (i.e. battery size), we will then set a curtailment to charge them as quick as possible but without
@@ -204,17 +219,19 @@ if __name__ == "__main__":
             soc = true_soc
 
         myCar.set_initial_charge_percentage(soc)
+    
 
-        predicted_energy_usage = predict(power_usage, lstm)
+
+        # predicted_energy_usage = predict(power_usage, lstm)
         # predicted_energy_usage = predict_energy_usage(true_energy_usage[0][1])
 
         
-        charge_rate = determine_optimal_charging_rate(myCar, predicted_energy_usage, peak_consumption) # Since it is every 10 minutes, and it is 10_000 watts per hour, you need to do 1/6 of the amount
+        charge_rate = determine_optimal_charging_rate(myCar, predicted_energy_usage[1:-1], peak_consumption) # Since it is every 10 minutes, and it is 10_000 watts per hour, you need to do 1/6 of the amount
         charge_rates.append(charge_rate)
         # Now that you got your charge_rate, you then actually charge the car. However, this SOC may be different than the one that you tried determining it on.
 
         # Reinforcement Learning time
-        run(actor, critic, power_usage, 1000, myCar, seq_length, peak_consumption)
+        # run(actor, critic, power_usage, 1000, myCar, seq_length, peak_consumption)
 
 
         i = 0
