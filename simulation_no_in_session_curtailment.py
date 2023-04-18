@@ -10,8 +10,7 @@ from sklearn.preprocessing import MinMaxScaler
 from price_agent import *
 from car import Car
 from Transformer import *
-
-
+import random
 # This will be the thing that generates the "true" energy usage. Will eventually be based on historical data instead. (Get the past 4 days at the leviton)
 def generate_energy_usage():
     today = datetime.datetime.now()
@@ -157,7 +156,7 @@ def generate_soc():
 
 
 if __name__ == "__main__":
-    peak_consumption = 30000 # Watts
+    peak_consumption = 70000 # Watts
     epochs = 100
 
     # Set up the probabilities of knowing the car that will be charging and predicting the soc
@@ -181,7 +180,7 @@ if __name__ == "__main__":
     num_tokens = int(300_000 / 1000 + 3)
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    energy_model = Transformer(num_tokens=num_tokens, dim_model=256, num_heads=num_head, num_encoder_layers=num_encoder_layer, num_decoder_layers=num_decoder_layer, dropout=0.2).to(device)
+    energy_model = Transformer(num_tokens=num_tokens, dim_model=256, num_heads=num_head, num_encoder_layers=num_encoder_layer, num_decoder_layers=num_decoder_layer, dropout=0.2)
     energy_model.load_state_dict(torch.load('models/transformer_energy_predictor.pth'))
     energy_model.to(device)
 
@@ -193,7 +192,8 @@ if __name__ == "__main__":
     actor = Actor(seq_length, 1)
     critic = Critic(seq_length, 1)
     
-    predicted_energy_usage = transformer_predict(energy_model, torch.tensor(np.array([power_usage[:seq_length]]), dtype=torch.long, device=device), device=device)
+
+
     
     # This simulation will "spawn" a car, and it is our job to charge it. We will have a basic probability distribution that will generate a power consumption for the next hour or so
     # Based upon this generation, and the chance of us knowing what soc they are at and what car they have (i.e. battery size), we will then set a curtailment to charge them as quick as possible but without
@@ -224,6 +224,9 @@ if __name__ == "__main__":
 
         # predicted_energy_usage = predict(power_usage, lstm)
         # predicted_energy_usage = predict_energy_usage(true_energy_usage[0][1])
+    
+        randStartLocation = random.randint(0, len(power_usage) - seq_length)
+        predicted_energy_usage = transformer_predict(energy_model, torch.tensor(np.array([power_usage[randStartLocation:randStartLocation+seq_length]]), dtype=torch.long, device=device), device=device)
 
         
         charge_rate = determine_optimal_charging_rate(myCar, predicted_energy_usage[1:-1], peak_consumption) # Since it is every 10 minutes, and it is 10_000 watts per hour, you need to do 1/6 of the amount
@@ -231,7 +234,7 @@ if __name__ == "__main__":
         # Now that you got your charge_rate, you then actually charge the car. However, this SOC may be different than the one that you tried determining it on.
 
         # Reinforcement Learning time
-        # run(actor, critic, power_usage, 1000, myCar, seq_length, peak_consumption)
+        run(actor, critic, power_usage, 1000, myCar, seq_length, peak_consumption)
 
 
         i = 0

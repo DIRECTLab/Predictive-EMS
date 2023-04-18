@@ -72,7 +72,7 @@ def run(actor, critic, data, num_epochs, car, seq_length, peak):
             reward -= 1
 
             if action + data[rand_location + seq_length + i] < peak:
-                reward -= 1000
+                reward -= 10
 
             i += 1
 
