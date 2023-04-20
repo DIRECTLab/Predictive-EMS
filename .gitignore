@@ -2,3 +2,5 @@
 Charging-Curve-Prediction
 *.hdf5
 Electric Vehicles
+*.pth
+old

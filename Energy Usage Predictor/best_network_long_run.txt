@@ -1,0 +1,6 @@
+The Best Network:
+ 	LR: 0.001
+	Num Heads: 16
+	Num Encoder Layers: 8
+	Num Decoder Layers: 8, Sequence Length: 40 
+	Tested: 96 Networks
