@@ -119,13 +119,13 @@ if __name__ == "__main__":
 
     probability_of_knowing_car = 0.80
     length_of_prediction = 18
-    epochs = 100_000
+    epochs = 1000
     device = "cuda" if torch.cuda.is_available() else "cpu"
     seq_length = 40
     state_space = seq_length + 1
     action_space = 195
 
-    static_curtailments = [20, 50, 100, 150]
+    static_curtailments = [20, 50, 100, 150, 200]
 
     # Setup energy model
     energy_model = setup_energy_prediction_agent(device)
