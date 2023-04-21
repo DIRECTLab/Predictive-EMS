@@ -40,7 +40,35 @@ def generate_energy_usage():
 
         ten_minute_averages.append((values[0]['timestamp'], int(np.clip(math.ceil((np.average(power) * 1000) / 1000) + 100, 0, 300_000 / 1000 + 3))))
 
+    
+    power_usage = np.array([i[1] for i in ten_minute_averages])
+    np.savetxt("energy_usage_four_days.csv", power_usage, delimiter=",")
+
     return ten_minute_averages
+
+def use_energy_usage():
+    return pd.read_csv("energy_usage_four_days.csv").to_numpy()
+
+def use_all_energy_usage():
+    df = pd.read_csv("Simulation/power_usage.csv", usecols=["power"])
+
+    
+    power = df.to_numpy().flatten()
+
+    for i in range(len(power)):
+        power[i] = int(np.clip(math.ceil(power[i] / 1000 + 100), 0,  300_000 / 1000 + 3))
+    
+    # for i in range(len(power)):
+    #     power[i] = int(math.ceil(i * 1000) / 1000 + 100)
+    #     if power[i] > 300_000 / 1000 + 3:
+    #         power[i] = 300_000 / 1000 + 3
+    #     elif power[i] < 0:
+    #         power[i] = 0
+    
+    return power
+
+
+
 
 def sliding_windows(data, lstm):
     x = []
@@ -114,9 +142,10 @@ def setup_energy_prediction_agent(device):
 
 if __name__ == "__main__":
     peak = 100 #kW
-    power_usage = generate_energy_usage()
-    power_usage = np.array([i[1] for i in power_usage])
-
+    # power_usage = generate_energy_usage()
+    # power_usage = np.array([i[1] for i in power_usage])
+    # power_usage = use_energy_usage().flatten()
+    power_usage = use_all_energy_usage()
     probability_of_knowing_car = 0.80
     length_of_prediction = 18
     epochs = 1000
@@ -125,7 +154,7 @@ if __name__ == "__main__":
     state_space = seq_length + 1
     action_space = 195
 
-    static_curtailments = [20, 50, 100, 150, 200]
+    static_curtailments = [50, 100, 150, 200, 250]
 
     # Setup energy model
     energy_model = setup_energy_prediction_agent(device)
@@ -160,24 +189,25 @@ if __name__ == "__main__":
             while not myCar.is_charged():
                 if i < len(static_curtailments):
                     myCar.charge(static_curtailments[i])
-                    if (static_curtailments[i] / 6) + power_usage[j] - 100 > peak:
+                    if static_curtailments[i] + power_usage[j] - 100 > peak:
                         static_curtailment_peak_exceed[i] += 1
                     static_curtailment_time[i] += 1
 
                 else:
                     while not myCar.is_charged():
                         myCar.charge(charge_rate)
-                        if (charge_rate / 6) + power_usage[j] - 100 > peak:
+                        if charge_rate + power_usage[j] - 100 > peak:
                             rl_peak_exceed += 1
                         rl_curtailment_time += 1
                 j += 1
             myCar.reset_charge()
 
     for i in range(len(static_curtailments)):
-        print(f"Average time to completion for {static_curtailments[i]} kW was {static_curtailment_time[i]/epochs}")
+        print(f"Average time to completion for {static_curtailments[i]} kW was {(static_curtailment_time[i]/epochs) * 10} minutes")
         print(f"Average times exceeding peak for {static_curtailments[i]} kW was {static_curtailment_peak_exceed[i]/epochs}")
+        print()
 
-    print(f"Average time to completion for RL agent was {rl_curtailment_time/epochs}")
+    print(f"Average time to completion for RL agent was {(rl_curtailment_time/epochs) * 10} minutes")
     print(f"Average times exceeding peak for RL agent was {rl_peak_exceed/epochs}")
     print(f"RL Agent had an average curtailment of {np.average(charge_rates)}")
 
