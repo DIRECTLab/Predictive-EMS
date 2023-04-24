@@ -4,3 +4,4 @@ Charging-Curve-Prediction
 Electric Vehicles
 *.pth
 old
+__pycache__/*
