@@ -179,6 +179,8 @@ if __name__ == "__main__":
         predicted_energy_usage = transformer_predict(energy_model, torch.tensor(np.array([power_usage[random_start_location:random_start_location+seq_length]]), dtype=torch.long, device=device), device=device)
         predicted_energy_usage = predicted_energy_usage[1:-1]
         predicted_energy_usage = predicted_energy_usage[:40]
+        while len(predicted_energy_usage) < 40:
+            predicted_energy_usage.append(predicted_energy_usage[-1])
         predicted_energy_usage.append(peak)
         charge_rate = rl_agent.predict(predicted_energy_usage, device)[0][0]
 
