@@ -141,7 +141,7 @@ def setup_energy_prediction_agent(device):
 
 
 if __name__ == "__main__":
-    peak = 100 #kW
+    # peak = 100 #kW
     # power_usage = generate_energy_usage()
     # power_usage = np.array([i[1] for i in power_usage])
     # power_usage = use_energy_usage().flatten()
@@ -151,16 +151,16 @@ if __name__ == "__main__":
     epochs = 1000
     device = "cuda" if torch.cuda.is_available() else "cpu"
     seq_length = 40
-    state_space = seq_length + 1
+    state_space = seq_length + 3
     action_space = 195
 
-    static_curtailments = [50, 100, 150, 200, 250]
+    static_curtailments = [50, 100, 150, 200]
 
     # Setup energy model
     energy_model = setup_energy_prediction_agent(device)
 
     # Setup Curtailment Model
-    rl_agent = Agent("models/curtailment_agent.pth", device, state_space, action_space)
+    rl_agent = Agent("models/curtailment_agent_test.pth", device, state_space, action_space)
 
     # Setup Bayesian Battery Predictor
     bayes_updater = BayesUpdater()
@@ -174,7 +174,8 @@ if __name__ == "__main__":
 
     for epoch in tqdm(range(epochs)):
         myCar = generate_new_car(bayes_updater)
-        random_start_location = random.randint(0, len(power_usage) - seq_length - 10) # This will be fed into the energy predictor, so only needs 40 sequence values
+        peak = random.randint(60, 160)
+        random_start_location = random.randint(0, len(power_usage) - seq_length - 30) # This will be fed into the energy predictor, so only needs 40 sequence values
 
         predicted_energy_usage = transformer_predict(energy_model, torch.tensor(np.array([power_usage[random_start_location:random_start_location+seq_length]]), dtype=torch.long, device=device), device=device)
         predicted_energy_usage = predicted_energy_usage[1:-1]
@@ -182,23 +183,28 @@ if __name__ == "__main__":
         while len(predicted_energy_usage) < 40:
             predicted_energy_usage.append(predicted_energy_usage[-1])
         predicted_energy_usage.append(peak)
+        predicted_energy_usage.append(myCar.initial_soc / 1000)
+        predicted_energy_usage.append(myCar.max_battery_size / 1000)
         charge_rate = rl_agent.predict(predicted_energy_usage, device)[0][0]
 
         charge_rates.append(charge_rate)
 
         for i in range(len(static_curtailments) + 1):
             j = 0
+            exceeded_peak = False
             while not myCar.is_charged():
                 if i < len(static_curtailments):
                     myCar.charge(static_curtailments[i])
-                    if static_curtailments[i] + power_usage[j] - 100 > peak:
+                    if static_curtailments[i] + power_usage[j] - 100 > peak and not exceeded_peak:
+                        exceeded_peak = True
                         static_curtailment_peak_exceed[i] += 1
                     static_curtailment_time[i] += 1
 
                 else:
                     while not myCar.is_charged():
                         myCar.charge(charge_rate)
-                        if charge_rate + power_usage[j] - 100 > peak:
+                        if charge_rate + power_usage[j] - 100 > peak and not exceeded_peak:
+                            exceeded_peak = True
                             rl_peak_exceed += 1
                         rl_curtailment_time += 1
                 j += 1
