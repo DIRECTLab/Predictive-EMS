@@ -1,5 +1,5 @@
 class Car:
-    def __init__(self, car_name, max_battery_size, max_charge_rate=200):
+    def __init__(self, car_name, max_battery_size, max_charge_rate=175):
         self.max_charge_rate = max_charge_rate
         self.initial_soc = 0 # watts
         self.max_battery_size = max_battery_size / 1000 # kW
