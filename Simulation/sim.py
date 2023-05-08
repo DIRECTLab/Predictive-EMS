@@ -213,14 +213,14 @@ if __name__ == "__main__":
     with open("results.txt", 'w') as f:
         for i in range(len(static_curtailments)):
             print(f"Average time to completion for {static_curtailments[i]} kW was {(static_curtailment_time[i]/epochs) * 10} minutes")
-            f.write(f"Average time to completion for {static_curtailments[i]} kW was {(static_curtailment_time[i]/epochs) * 10} minutes")
+            f.write(f"Average time to completion for {static_curtailments[i]} kW was {(static_curtailment_time[i]/epochs) * 10} minutes\n")
             print(f"Average times exceeding peak for {static_curtailments[i]} kW was {static_curtailment_peak_exceed[i]/epochs}")
-            f.write(f"Average times exceeding peak for {static_curtailments[i]} kW was {static_curtailment_peak_exceed[i]/epochs}\n")
+            f.write(f"Average times exceeding peak for {static_curtailments[i]} kW was {static_curtailment_peak_exceed[i]/epochs}\n\n")
             print("\n")
 
-        f.write(f"Average time to completion for RL agent was {(rl_curtailment_time/epochs) * 10} minutes")
-        f.write(f"Average times exceeding peak for RL agent was {rl_peak_exceed/epochs}")
-        f.write(f"RL Agent had an average curtailment of {np.average(charge_rates)}")
+        f.write(f"Average time to completion for RL agent was {(rl_curtailment_time/epochs) * 10} minutes\n")
+        f.write(f"Average times exceeding peak for RL agent was {rl_peak_exceed/epochs}\n")
+        f.write(f"RL Agent had an average curtailment of {np.average(charge_rates)}\n")
         print(f"Average time to completion for RL agent was {(rl_curtailment_time/epochs) * 10} minutes")
         print(f"Average times exceeding peak for RL agent was {rl_peak_exceed/epochs}")
         print(f"RL Agent had an average curtailment of {np.average(charge_rates)}")
