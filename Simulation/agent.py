@@ -29,8 +29,13 @@ class DQN(nn.Module):
 
         self.fc1 = nn.Linear(state_space, 256)
         self.fc2 = nn.Linear(256, 512)
-        self.fc5 = nn.Linear(512, 256)
-        self.fc6 = nn.Linear(256, action_space)
+        self.fc3 = nn.Linear(512, 1024)
+        self.fc4 = nn.Linear(1024, 2048)
+        self.fc5 = nn.Linear(2048, 1024)
+        self.fc6 = nn.Linear(1024, 512)
+        self.fc7 = nn.Linear(512, 256)
+        self.fc8 = nn.Linear(256, 128)
+        self.fc9 = nn.Linear(128, action_space)
 
 
         # Below is the good_with_car
@@ -62,14 +67,20 @@ class DQN(nn.Module):
         # out = F.relu(self.fc5(out))
 
         # out = self.fc6(out)
+
         out = F.relu(self.fc1(state))
         out = F.relu(self.fc2(out))
-
+        out = F.relu(self.fc3(out))
+        out = F.relu(self.fc4(out))
         out = F.relu(self.fc5(out))
+        out = F.relu(self.fc6(out))
+        out = F.relu(self.fc7(out))
+        out = F.relu(self.fc8(out))
 
-        out = self.fc6(out)
+        out = self.fc9(out)
 
         return out
+
 
         # Below is the good_with_car
 
