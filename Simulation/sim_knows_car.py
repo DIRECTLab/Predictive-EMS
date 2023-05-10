@@ -108,7 +108,7 @@ def generate_car(correct_car=""):
 
 
 def generate_new_car(bayes_updater):
-    probability_of_knowing_car = 0.80
+    probability_of_knowing_car = 1.0
 
     true_car, max_battery_size = generate_car()
     if np.random.random() > probability_of_knowing_car:
@@ -146,13 +146,26 @@ if __name__ == "__main__":
     # power_usage = np.array([i[1] for i in power_usage])
     # power_usage = use_energy_usage().flatten()
     power_usage = use_all_energy_usage()
-    probability_of_knowing_car = 0.80
+    probability_of_knowing_car = 1.0
     length_of_prediction = 18
     epochs = 1000
     device = "cuda" if torch.cuda.is_available() else "cpu"
     seq_length = 40
     state_space = seq_length + 3
     action_space = 190
+
+    max_peak = 130
+    min_peak = 80
+
+    min_soc = 0
+    max_soc = 100
+
+    min_battery_size = 21.3
+    max_battery_size = 212.0
+
+    min_power_usage = 0.0
+    max_power_usage = 218.0
+
 
     static_curtailments = [50, 100, 150, 200]
 
@@ -174,7 +187,7 @@ if __name__ == "__main__":
 
     for epoch in tqdm(range(epochs)):
         myCar = generate_new_car(bayes_updater)
-        peak = random.randint(60, 160)
+        peak = random.randint(min_peak, max_peak)
         random_start_location = random.randint(0, len(power_usage) - seq_length - 30) # This will be fed into the energy predictor, so only needs 40 sequence values
 
         predicted_energy_usage = transformer_predict(energy_model, torch.tensor(np.array([power_usage[random_start_location:random_start_location+seq_length]]), dtype=torch.long, device=device), device=device)
@@ -182,9 +195,14 @@ if __name__ == "__main__":
         predicted_energy_usage = predicted_energy_usage[:40]
         while len(predicted_energy_usage) < 40:
             predicted_energy_usage.append(predicted_energy_usage[-1])
-        predicted_energy_usage.append(peak)
-        predicted_energy_usage.append(myCar.initial_soc / 1000)
-        predicted_energy_usage.append(myCar.max_battery_size / 1000)
+        
+        predicted_energy_usage.append((peak - min_peak) / (max_peak - min_peak))
+        predicted_energy_usage.append((myCar.initial_soc / 1000 - min_soc) / (max_soc - min_soc))
+        predicted_energy_usage.append((myCar.max_battery_size / 1000 - min_battery_size ) / (max_battery_size - min_battery_size))
+        
+        # predicted_energy_usage.append(peak)
+        # predicted_energy_usage.append(myCar.initial_soc / 1000)
+        # predicted_energy_usage.append(myCar.max_battery_size / 1000)
         charge_rate = rl_agent.predict(predicted_energy_usage, device)[0][0]
 
         charge_rates.append(charge_rate)
