@@ -8,7 +8,7 @@ import torch
 # from sklearn.preprocessing import MinMaxScaler
 from car import Car
 from Transformer import *
-from agent import Agent
+from agent_knows_car import Agent
 from bayesian_updater import BayesUpdater
 import random
 
@@ -150,6 +150,7 @@ if __name__ == "__main__":
     length_of_prediction = 18
     epochs = 1000
     device = "cuda" if torch.cuda.is_available() else "cpu"
+    print(device)
     seq_length = 40
     state_space = seq_length + 3
     action_space = 190
@@ -160,7 +161,7 @@ if __name__ == "__main__":
     energy_model = setup_energy_prediction_agent(device)
 
     # Setup Curtailment Model
-    rl_agent = Agent("models/curtailment_agent_test_knows_car.pth", device, state_space, action_space)
+    rl_agent = Agent("models/curtailment_agent_knows_car.pth", device, state_space, action_space)
 
     # Setup Bayesian Battery Predictor
     bayes_updater = BayesUpdater()
