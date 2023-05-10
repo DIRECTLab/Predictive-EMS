@@ -6,8 +6,6 @@ class Car:
         self.car_name = car_name
         self.soc = self.initial_soc / self.max_battery_size
     
-    # This will be linear to begin with. Then replace with typical battery curve for a Tesla or something like that. If I can build out a better
-    # model, this will be done instead. Currently linear implementation. This will also be replaced
     def charge(self, charge_amount):
         self.soc += min(charge_amount / 6 * 0.9, self.max_charge_rate / 6 * 0.9) # Assume 90% efficiency of charge rate. Varied amounts due to temperature and currents. Safe to just go with an average of the efficiencies that I saw
     
@@ -16,7 +14,7 @@ class Car:
     
     def set_initial_charge_percentage(self, current_soc):
         self.initial_soc = current_soc / 100 * self.max_battery_size
-        self.soc = current_soc/ 100 * self.max_battery_size
+        self.soc = self.initial_soc 
     
     def reset_charge(self):
         self.soc = self.initial_soc

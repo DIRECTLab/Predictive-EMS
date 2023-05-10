@@ -89,10 +89,19 @@ class DQN(nn.Module):
         out = F.relu(self.fc1(state))
         out = F.relu(self.fc2(out))
         out = F.relu(self.fc3(out))
+<<<<<<< HEAD
         out = F.relu(self.fc4(out))
         out = F.relu(self.fc5(out))
+=======
+        # out = F.relu(self.fc4(out))
+        # out = F.relu(self.fc5(out))
+        # out = F.relu(self.fc6(out))
+        out = F.relu(self.fc7(out))
+        out = F.relu(self.fc8(out))
+>>>>>>> 41d71ed532e3c4fe60eb37d557d296965b755ff0
 
         out = self.fc6(out)
+
 
         return out
 
