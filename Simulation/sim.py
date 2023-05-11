@@ -148,7 +148,7 @@ if __name__ == "__main__":
     power_usage = use_all_energy_usage()
     probability_of_knowing_car = 0.80
     length_of_prediction = 18
-    epochs = 2000
+    epochs = 1000
     device = "cuda" if torch.cuda.is_available() else "cpu"
     seq_length = 40
     state_space = seq_length + 3
@@ -185,7 +185,7 @@ if __name__ == "__main__":
         predicted_energy_usage.append(peak)
         predicted_energy_usage.append(myCar.initial_soc / 1000)
         predicted_energy_usage.append(myCar.max_battery_size / 1000)
-        charge_rate = rl_agent.predict(predicted_energy_usage, device)[0][0]
+        charge_rate = rl_agent.predict(predicted_energy_usage, device)[0][0] + 20
 
         charge_rates.append(charge_rate)
 
