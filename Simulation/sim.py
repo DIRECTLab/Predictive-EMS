@@ -148,16 +148,17 @@ if __name__ == "__main__":
     power_usage = use_all_energy_usage()
     probability_of_knowing_car = 0.80
     length_of_prediction = 18
-    epochs = 2000
+    epochs = 1000
     device = "cuda" if torch.cuda.is_available() else "cpu"
     seq_length = 40
     state_space = seq_length + 3
-    action_space = 190
+    action_space = 160
 
     static_curtailments = [50, 100, 150, 200]
 
     # Setup energy model
     energy_model = setup_energy_prediction_agent(device)
+
 
     # Setup Curtailment Model
     rl_agent = Agent("models/curtailment_agent_test.pth", device, state_space, action_space)
