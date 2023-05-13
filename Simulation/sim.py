@@ -186,7 +186,7 @@ if __name__ == "__main__":
         predicted_energy_usage.append(peak)
         predicted_energy_usage.append(myCar.initial_soc / 1000)
         predicted_energy_usage.append(myCar.max_battery_size / 1000)
-        charge_rate = rl_agent.predict(predicted_energy_usage, device)[0][0]
+        charge_rate = rl_agent.predict(predicted_energy_usage, device)[0][0] + 20
 
         charge_rates.append(charge_rate)
 

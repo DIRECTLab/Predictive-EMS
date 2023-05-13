@@ -36,11 +36,10 @@ class DQN(nn.Module):
         # self.fc7 = nn.Linear(512, 256)
         # self.fc8 = nn.Linear(256, 128)
         # self.fc9 = nn.Linear(128, action_space)
-
         self.fc1 = nn.Linear(state_space, 256)
         self.fc2 = nn.Linear(256, 512)
-        self.fc3 = nn.Linear(512, 1024)
-        self.fc4 = nn.Linear(1024, 512)
+        # self.fc3 = nn.Linear(512, 1024)
+        # self.fc4 = nn.Linear(1024, 512)
         self.fc5 = nn.Linear(512, 256)
         self.fc6 = nn.Linear(256, action_space)
 
@@ -88,12 +87,13 @@ class DQN(nn.Module):
 
         out = F.relu(self.fc1(state))
         out = F.relu(self.fc2(out))
-        out = F.relu(self.fc3(out))
-        out = F.relu(self.fc4(out))
+        # out = F.relu(self.fc3(out))
+        # out = F.relu(self.fc4(out))
         out = F.relu(self.fc5(out))
 
         out = self.fc6(out)
 
+        return out
 
         return out
 
