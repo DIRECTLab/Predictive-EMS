@@ -174,7 +174,7 @@ if __name__ == "__main__":
     energy_model = setup_energy_prediction_agent(device)
 
     # Setup Curtailment Model
-    rl_agent = Agent("models/curtailment_agent_knows_car.pth", device, state_space, action_space)
+    rl_agent = Agent("models/curtailment_agent_test_knows_car.pth", device, state_space, action_space)
 
     # Setup Bayesian Battery Predictor
     bayes_updater = BayesUpdater()
@@ -182,8 +182,10 @@ if __name__ == "__main__":
     charge_rates = []
     static_curtailment_peak_exceed = [0 for _ in range(len(static_curtailments))]
     static_curtailment_time = [0 for _ in range(len(static_curtailments))]
+    average_amount_above_peak = [0 for _ in range(len(static_curtailments))]
     rl_peak_exceed = 0
     rl_curtailment_time = 0
+    rl_above_peak = 0
 
 
     for epoch in tqdm(range(epochs)):
@@ -211,12 +213,16 @@ if __name__ == "__main__":
         for i in range(len(static_curtailments) + 1):
             j = 0
             exceeded_peak = False
+            amount = 0
             while not myCar.is_charged():
                 if i < len(static_curtailments):
                     myCar.charge(static_curtailments[i])
                     if static_curtailments[i] + power_usage[j] - 100 > peak and not exceeded_peak:
                         exceeded_peak = True
                         static_curtailment_peak_exceed[i] += 1
+                        amount = max(amount, static_curtailments[i] + power_usage[j] - 100 - peak)
+                    elif exceeded_peak:
+                        amount = max(amount, static_curtailments[i] + power_usage[j] - 100 - peak)
                     static_curtailment_time[i] += 1
 
                 else:
@@ -225,8 +231,16 @@ if __name__ == "__main__":
                         if charge_rate + power_usage[j] - 100 > peak and not exceeded_peak:
                             exceeded_peak = True
                             rl_peak_exceed += 1
+                            amount = max(amount, charge_rate + power_usage[j] - 100 - peak)
+                        elif exceeded_peak:
+                            amount = max(amount, charge_rate + power_usage[j] - 100 - peak)
                         rl_curtailment_time += 1
                 j += 1
+
+                if (i < len(static_curtailments)):
+                    average_amount_above_peak[i] += amount
+                else:
+                    rl_above_peak += amount
             myCar.reset_charge()
 
     with open("results_known.txt", 'w') as f:
@@ -234,15 +248,19 @@ if __name__ == "__main__":
             print(f"Average time to completion for {static_curtailments[i]} kW was {(static_curtailment_time[i]/epochs) * 10} minutes")
             f.write(f"Average time to completion for {static_curtailments[i]} kW was {(static_curtailment_time[i]/epochs) * 10} minutes\n")
             print(f"Average times exceeding peak for {static_curtailments[i]} kW was {static_curtailment_peak_exceed[i]/epochs}")
+            f.write(f"Average amount exceeding peak for {static_curtailments[i]} kW was {average_amount_above_peak[i]/epochs}\n")
             f.write(f"Average times exceeding peak for {static_curtailments[i]} kW was {static_curtailment_peak_exceed[i]/epochs}\n\n")
+            print(f"Average amount exceeding peak for {static_curtailments[i]} kW was {average_amount_above_peak[i]/epochs}")
             print("\n")
 
         f.write(f"Average time to completion for RL agent was {(rl_curtailment_time/epochs) * 10} minutes\n")
         f.write(f"Average times exceeding peak for RL agent was {rl_peak_exceed/epochs}\n")
         f.write(f"RL Agent had an average curtailment of {np.average(charge_rates)}\n")
+        f.write(f"Average amount exceeding peak for RL agent was {rl_above_peak/epochs}\n")
         print(f"Average time to completion for RL agent was {(rl_curtailment_time/epochs) * 10} minutes")
         print(f"Average times exceeding peak for RL agent was {rl_peak_exceed/epochs}")
         print(f"RL Agent had an average curtailment of {np.average(charge_rates)}")
+        print(f"Average amount exceeding peak for RL agent was {rl_above_peak/epochs}\n")
 
 
 

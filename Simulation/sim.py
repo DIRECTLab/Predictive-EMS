@@ -152,7 +152,19 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
     seq_length = 40
     state_space = seq_length + 3
-    action_space = 160
+    action_space = 190
+
+    max_peak = 130
+    min_peak = 80
+
+    min_soc = 0
+    max_soc = 100
+
+    min_battery_size = 21.3
+    max_battery_size = 212.0
+
+    min_power_usage = 0.0
+    max_power_usage = 218.0
 
     static_curtailments = [50, 100, 150, 200]
 
@@ -161,7 +173,9 @@ if __name__ == "__main__":
 
 
     # Setup Curtailment Model
-    rl_agent = Agent("models/curtailment_agent_test.pth", device, state_space, action_space)
+    # rl_agent = Agent("models/curtailment_agent_test.pth", device, state_space, action_space)
+    rl_agent = Agent("models/curtailment_agent_test_two.pth", device, state_space, action_space)
+
 
     # Setup Bayesian Battery Predictor
     bayes_updater = BayesUpdater()
@@ -169,13 +183,15 @@ if __name__ == "__main__":
     charge_rates = []
     static_curtailment_peak_exceed = [0 for _ in range(len(static_curtailments))]
     static_curtailment_time = [0 for _ in range(len(static_curtailments))]
+    average_amount_above_peak = [0 for _ in range(len(static_curtailments))]
     rl_peak_exceed = 0
     rl_curtailment_time = 0
+    rl_above_peak = 0
 
 
     for epoch in tqdm(range(epochs)):
         myCar = generate_new_car(bayes_updater)
-        peak = random.randint(60, 160)
+        peak = random.randint(min_peak, max_peak)
         random_start_location = random.randint(0, len(power_usage) - seq_length - 30) # This will be fed into the energy predictor, so only needs 40 sequence values
 
         predicted_energy_usage = transformer_predict(energy_model, torch.tensor(np.array([power_usage[random_start_location:random_start_location+seq_length]]), dtype=torch.long, device=device), device=device)
@@ -183,22 +199,27 @@ if __name__ == "__main__":
         predicted_energy_usage = predicted_energy_usage[:40]
         while len(predicted_energy_usage) < 40:
             predicted_energy_usage.append(predicted_energy_usage[-1])
-        predicted_energy_usage.append(peak)
-        predicted_energy_usage.append(myCar.initial_soc / 1000)
-        predicted_energy_usage.append(myCar.max_battery_size / 1000)
-        charge_rate = rl_agent.predict(predicted_energy_usage, device)[0][0] + 20
+
+        predicted_energy_usage.append((peak - min_peak) / (max_peak - min_peak))
+        predicted_energy_usage.append((myCar.initial_soc / 1000 - min_soc) / (max_soc - min_soc))
+        predicted_energy_usage.append((myCar.max_battery_size / 1000 - min_battery_size ) / (max_battery_size - min_battery_size))
+        charge_rate = rl_agent.predict(predicted_energy_usage, device)[0][0]
 
         charge_rates.append(charge_rate)
 
         for i in range(len(static_curtailments) + 1):
             j = 0
             exceeded_peak = False
+            amount = 0
             while not myCar.is_charged():
                 if i < len(static_curtailments):
                     myCar.charge(static_curtailments[i])
                     if static_curtailments[i] + power_usage[j] - 100 > peak and not exceeded_peak:
                         exceeded_peak = True
                         static_curtailment_peak_exceed[i] += 1
+                        amount = max(amount, static_curtailments[i] + power_usage[j] - 100)
+                    elif exceeded_peak:
+                        amount = max(amount, static_curtailments[i] + power_usage[j] - 100)
                     static_curtailment_time[i] += 1
 
                 else:
@@ -207,24 +228,43 @@ if __name__ == "__main__":
                         if charge_rate + power_usage[j] - 100 > peak and not exceeded_peak:
                             exceeded_peak = True
                             rl_peak_exceed += 1
+                            amount = max(amount, charge_rate + power_usage[j] - 100)
+                        elif exceeded_peak:
+                            amount = max(amount, charge_rate + power_usage[j] - 100)
+                        
                         rl_curtailment_time += 1
+                    
+
                 j += 1
+
+                if (i < len(static_curtailments)):
+                    average_amount_above_peak[i] += amount
+                else:
+                    rl_above_peak += amount
+
             myCar.reset_charge()
+    
+    print(charge_rates)
 
     with open("results.txt", 'w') as f:
         for i in range(len(static_curtailments)):
             print(f"Average time to completion for {static_curtailments[i]} kW was {(static_curtailment_time[i]/epochs) * 10} minutes")
             f.write(f"Average time to completion for {static_curtailments[i]} kW was {(static_curtailment_time[i]/epochs) * 10} minutes\n")
             print(f"Average times exceeding peak for {static_curtailments[i]} kW was {static_curtailment_peak_exceed[i]/epochs}")
+            f.write(f"Average amount exceeding peak for {static_curtailments[i]} kW was {average_amount_above_peak[i]/epochs}\n")
             f.write(f"Average times exceeding peak for {static_curtailments[i]} kW was {static_curtailment_peak_exceed[i]/epochs}\n\n")
+            print(f"Average amount exceeding peak for {static_curtailments[i]} kW was {average_amount_above_peak[i]/epochs}")
             print("\n")
 
         f.write(f"Average time to completion for RL agent was {(rl_curtailment_time/epochs) * 10} minutes\n")
         f.write(f"Average times exceeding peak for RL agent was {rl_peak_exceed/epochs}\n")
         f.write(f"RL Agent had an average curtailment of {np.average(charge_rates)}\n")
+        f.write(f"Average amount exceeding peak for RL agent was {rl_above_peak/epochs}\n")
         print(f"Average time to completion for RL agent was {(rl_curtailment_time/epochs) * 10} minutes")
         print(f"Average times exceeding peak for RL agent was {rl_peak_exceed/epochs}")
         print(f"RL Agent had an average curtailment of {np.average(charge_rates)}")
+        print(f"Average amount exceeding peak for RL agent was {rl_above_peak/epochs}\n")
+
 
 
 

@@ -36,13 +36,25 @@ class DQN(nn.Module):
         # self.fc7 = nn.Linear(512, 256)
         # self.fc8 = nn.Linear(256, 128)
         # self.fc9 = nn.Linear(128, action_space)
+        # self.fc1 = nn.Linear(state_space, 256)
+        # self.fc2 = nn.Linear(256, 512)
+        # # self.fc3 = nn.Linear(512, 1024)
+        # # self.fc4 = nn.Linear(1024, 512)
+        # self.fc5 = nn.Linear(512, 256)
+        # self.fc6 = nn.Linear(256, action_space)
+
+
         self.fc1 = nn.Linear(state_space, 256)
         self.fc2 = nn.Linear(256, 512)
-        # self.fc3 = nn.Linear(512, 1024)
-        # self.fc4 = nn.Linear(1024, 512)
+        self.fc3 = nn.Linear(512, 1024)
+        self.fc4 = nn.Linear(1024, 512)
         self.fc5 = nn.Linear(512, 256)
         self.fc6 = nn.Linear(256, action_space)
-
+        # self.fc5 = nn.Linear(512, 256)
+        # self.fc6 = nn.Linear(256, action_space)
+        # self.fc7 = nn.Linear(1024, 256)
+        # self.fc8 = nn.Linear(256, 128)
+        # self.fc9 = nn.Linear(128, action_space)
         # Below is the good_with_car
         # self.fc1 = nn.Linear(state_space, 256)
         # self.fc2 = nn.Linear(256, 512)
@@ -85,17 +97,25 @@ class DQN(nn.Module):
 
         # return out
 
+        # out = F.relu(self.fc1(state))
+        # out = F.relu(self.fc2(out))
+        # # out = F.relu(self.fc3(out))
+        # # out = F.relu(self.fc4(out))
+        # out = F.relu(self.fc5(out))
+
+        # out = self.fc6(out)
+
         out = F.relu(self.fc1(state))
         out = F.relu(self.fc2(out))
-        # out = F.relu(self.fc3(out))
-        # out = F.relu(self.fc4(out))
+        out = F.relu(self.fc3(out))
+        out = F.relu(self.fc4(out))
         out = F.relu(self.fc5(out))
 
         out = self.fc6(out)
 
         return out
 
-        return out
+        # return out
 
         # Below is the good_with_car
 
@@ -110,7 +130,7 @@ class DQN(nn.Module):
         # return out
 
 class Agent:
-    def __init__(self, model_path, device, state_space, action_space=195):
+    def __init__(self, model_path, device, state_space, action_space=160):
         self.device = device
 
         self.action_space = action_space # Give actions in 10s of kW. (So 1 is 10kw)

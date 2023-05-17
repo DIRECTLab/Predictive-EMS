@@ -1,0 +1,20 @@
+Average time to completion for 50 kW was 28.439999999999998 minutes
+Average amount exceeding peak for 50 kW was 0.0
+Average times exceeding peak for 50 kW was 0.0
+
+Average time to completion for 100 kW was 17.03 minutes
+Average amount exceeding peak for 100 kW was 6.989
+Average times exceeding peak for 100 kW was 0.368
+
+Average time to completion for 150 kW was 13.580000000000002 minutes
+Average amount exceeding peak for 150 kW was 59.154
+Average times exceeding peak for 150 kW was 1.0
+
+Average time to completion for 200 kW was 12.88 minutes
+Average amount exceeding peak for 200 kW was 119.995
+Average times exceeding peak for 200 kW was 1.0
+
+Average time to completion for RL agent was 17.92 minutes
+Average times exceeding peak for RL agent was 0.186
+RL Agent had an average curtailment of 92.0
+Average amount exceeding peak for RL agent was 0.953
